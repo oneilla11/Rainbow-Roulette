@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Rainbow Roulette (Central Server)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    html, body { margin: 0; padding: 0; background: #050505; color: white; font-family: system-ui, sans-serif; }
+    canvas { display: block; margin: 0 auto; }
+    .hint {
+      position: fixed; left: 12px; bottom: 12px; opacity: 0.7; font-size: 12px;
+      background: rgba(0,0,0,0.5); padding: 6px 8px; border-radius: 6px;
+    }
+  </style>
+
+  <!-- Socket.IO served by server -->
+  <script src="/socket.io/socket.io.js"></script>
+
+  <!-- p5 / p5.play from CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/p5@1.9.3/lib/p5.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/p5.play@1.5.0/lib/p5.play.js"></script>
+</head>
+<body>
+  <div class="hint">
+    Hold mouse to move. Survive eliminations. Immunity protects next elimination.
+  </div>
+
+<script>
+/* ================================================================
+Rainbow Roulette — Central Server Client
+- Server owns lobby/rounds/roles/elimination/immunity.
+- Client owns rendering + sending movement.
+================================================================ */
+
+let socket;
+let myId = null;
+
+// World & zones (from server welcome)
+let WORLD_SIZE = 1400;
+let BANNER_H = 110;
+let ZONES = [];
+let MAX_IMMUNITY_VALUE = 2;
+
+let playersById = {};
+let otherPlayersGroup;
+let mySprite;
+
+// Server snapshot
+let snap = null;
+
+// Visual config
+const PLAYER_DIAMETER = 48;
+const REG_SPEED = 4;
+
+// --------------------------------------------------
+function setup() {
+  createCanvas(WORLD_SIZE, WORLD_SIZE);
+  textAlign(CENTER, CENTER);
+  rectMode(CENTER);
+  angleMode(DEGREES);
+
+  otherPlayersGroup = new Group();
+
+  socket = io();
+
+  socket.on("welcome", (data) => {
+    myId = data.id;
+    WORLD_SIZE = data.worldSize;
+    BANNER_H = data.bannerH;
+    ZONES = data.zones;
+    MAX_IMMUNITY_VALUE = data.maxImmunity;
+    resizeCanvas(WORLD_SIZE, WORLD_SIZE);
+
+    const name = prompt("Enter your name:", "Player") || "Player";
+    socket.emit("setName", name);
+
+    // Create my sprite placeholder (position will be synced via server)
+    mySprite = createSprite(WORLD_SIZE/2, WORLD_SIZE/2, PLAYER_DIAMETER, PLAYER_DIAMETER);
+    mySprite.shapeColor = color(255);
+  });
+
+  socket.on("state", (state) => {
+    snap = state;
+    // Update local cache and sprites
+    reconcilePlayers(state.players);
+  });
+}
+
+function reconcilePlayers(playersArray) {
+  const seen = new Set();
+
+  playersArray.forEach(p => {
+    seen.add(p.id);
+    playersById[p.id] = p;
+
+    if (p.id === myId) {
+      if (mySprite) {
+        mySprite.position.x = p.x;
+        mySprite.position.y = p.y;
+      }
+      return;
+    }
+
+    // Remote sprite management
+    let spr = otherPlayersGroup.find(s => s.playerId === p.id);
+    if (!spr) {
+      spr = createSprite(p.x, p.y, PLAYER_DIAMETER, PLAYER_DIAMETER);
+      spr.playerId = p.id;
+      otherPlayersGroup.add(spr);
+    }
+    spr.position.x = p.x;
+    spr.position.y = p.y;
+
+    // Color / alpha based on alive
+    const c = color(`hsla(${p.color}, 90%, 60%, ${p.alive ? 1.0 : 0.25})`);
+    spr.shapeColor = c;
+  });
+
+  // Remove sprites for disconnected players
+  otherPlayersGroup.forEach(spr => {
+    if (!seen.has(spr.playerId)) spr.remove();
+  });
+}
+
+// --------------------------------------------------
+function drawZones() {
+  // Banner
+  noStroke();
+  fill(20);
+  rect(WORLD_SIZE/2, BANNER_H/2, WORLD_SIZE, BANNER_H);
+
+  // Playfield background
+  fill(8);
+  rect(WORLD_SIZE/2, (WORLD_SIZE+BANNER_H)/2, WORLD_SIZE, WORLD_SIZE-BANNER_H);
+
+  // Zones
+  ZONES.forEach(z => {
+    let baseColor;
+    switch (z.key) {
+      case "red": baseColor = color(220, 50, 50); break;
+      case "orange": baseColor = color(230, 140, 40); break;
+      case "yellow": baseColor = color(230, 210, 40); break;
+      case "green": baseColor = color(60, 210, 80); break;
+      case "blue": baseColor = color(60, 120, 240); break;
+      case "violet": baseColor = color(160, 90, 240); break;
+      default: baseColor = color(180);
+    }
+
+    // Highlight by current role
+    const role = snap?.zoneRoles?.[z.key];
+    if (role === "elimination") baseColor.setAlpha(220);
+    else if (role === "survival") baseColor.setAlpha(160);
+    else if (role === "immunity") baseColor.setAlpha(250);
+    else baseColor.setAlpha(110);
+
+    fill(baseColor);
+    rect(z.x, z.y, z.w, z.h, 18);
+
+    // Role label
+    if (role) {
+      fill(0);
+      textSize(22);
+      text(role.toUpperCase(), z.x, z.y);
+    } else {
+      fill(0, 80);
+      textSize(18);
+      text(z.key.toUpperCase(), z.x, z.y);
+    }
+  });
+
+  // Spawn center (black zone)
+  fill(0);
+  rect(WORLD_SIZE/2, WORLD_SIZE/2, 220, 220, 24);
+  fill(255);
+  textSize(18);
+  text("SPAWN", WORLD_SIZE/2, WORLD_SIZE/2);
+}
+
+function drawHUD() {
+  if (!snap) return;
+
+  const t = snap.t;
+  const lobbyOpen = snap.lobbyOpen;
+  const requiredPlayers = snap.requiredPlayers;
+
+  // Banner text
+  fill(255);
+  textSize(26);
+
+  if (lobbyOpen) {
+    const count = snap.players.length;
+    text(
+      `LOBBY : ${count}/${requiredPlayers} players — waiting for more...`,
+      WORLD_SIZE/2, BANNER_H/2
+    );
+  } else {
+    const r = snap.currentRound;
+    if (snap.roundRunning) {
+      const remaining = Math.max(0, snap.roundEndTime - t);
+      text(`ROUND ${r} — choose a zone!  ${Math.ceil(remaining/1000)}s`, WORLD_SIZE/2, BANNER_H/2);
+    } else {
+      const until = Math.max(0, snap.intermissionUntil - t);
+      text(`ROUND ${r} resolved — next round in ${Math.ceil(until/1000)}s`, WORLD_SIZE/2, BANNER_H/2);
+    }
+  }
+
+  // My status bottom-center
+  const me = playersById[myId];
+  if (me) {
+    fill(255);
+    textSize(18);
+    let msg = me.alive ? "ALIVE" : `ELIMINATED (round ${me.eliminatedRound})`;
+    msg += `  |  Immunity: ${me.immunity}/${MAX_IMMUNITY_VALUE}`;
+    text(msg, WORLD_SIZE/2, WORLD_SIZE - 20);
+  }
+}
+
+// --------------------------------------------------
+function draw() {
+  background(5);
+  drawZones();
+
+  // Move if alive & round running
+  const me = playersById[myId];
+  if (me && me.alive && snap && snap.roundRunning) {
+    if (mouseIsPressed) {
+      const dx = mouseX - mySprite.position.x;
+      const dy = mouseY - mySprite.position.y;
+      const d = Math.sqrt(dx*dx + dy*dy);
+      if (d > 1) {
+        mySprite.position.x += (dx/d) * REG_SPEED;
+        mySprite.position.y += (dy/d) * REG_SPEED;
+
+        // clamp to world (respect banner)
+        mySprite.position.x = constrain(mySprite.position.x, 0, WORLD_SIZE);
+        mySprite.position.y = constrain(mySprite.position.y, BANNER_H, WORLD_SIZE);
+
+        socket.emit("move", { x: mySprite.position.x, y: mySprite.position.y });
+      }
+    }
+  }
+
+  // My color and alpha based on alive
+  if (me && mySprite) {
+    const c = color(`hsla(${me.color}, 90%, 60%, ${me.alive ? 1.0 : 0.25})`);
+    mySprite.shapeColor = c;
+  }
+
+  drawSprites();
+  drawHUD();
+}
+</script>
+</body>
+</html>

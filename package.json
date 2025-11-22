@@ -1,0 +1,26 @@
+{
+  "name": "rainbow-roulette-central-server",
+  "version": "1.0.0",
+  "description": "Rainbow Roulette with centralized authoritative server (Node + Socket.IO) and p5.js client.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "nodemon server.js"
+  },
+  "keywords": [
+    "p5js",
+    "socket.io",
+    "multiplayer",
+    "game",
+    "rainbow-roulette"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.19.2",
+    "socket.io": "^4.8.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}
