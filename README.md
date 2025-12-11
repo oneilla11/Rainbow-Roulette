@@ -17,6 +17,7 @@ _____________________________________________________________________
 
 _____________________________________________________________________
 
-####!!- OPEN SOURCE PROJECT -!!
+#### !!- OPEN SOURCE PROJECT -!!
+
 *This is a student project for the IMM-270 Networked Games course at TCNJ. Feel free to build upon the base code as desired.*
 
