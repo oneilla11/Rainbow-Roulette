@@ -98,7 +98,7 @@ io.on("connection", (socket) => {
     log("Client disconnected:", socket.id);
     lobbyPlayers.delete(socket.id);
 
-    // Tell everyone this player is gone / should become spectator
+    // Tells everyone this player is gone / should become spectator
     io.emit("delete", socket.id);
   });
 });
