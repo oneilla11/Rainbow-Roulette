@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Rainbow Roulette</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- p5 core -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js"></script>
+
+    <!-- p5.sound (for loadSound / audio) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/addons/p5.sound.min.js"></script>
+
+    <!-- p5.play -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.play/1.5.3/p5.play.min.js"></script>
+
+    <!-- Socket.IO client (served by our server) -->
+    <script src="/socket.io/socket.io.js"></script>
+
+    <style>
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+        background: #202020;
+        color: #f0f0f0;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      }
+      #p5-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+      canvas {
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.6);
+        border-radius: 12px;
+        background: #ffffff;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="p5-container"></div>
+
+    <!-- Rainbow Roulette game -->
+    <script src="sketch.js"></script>
+  </body>
+</html>
+
