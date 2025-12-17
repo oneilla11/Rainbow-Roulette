@@ -1,6 +1,6 @@
 # Rainbow Roulette
 
-![image](images/rainbow_roulette.png)
+![image](public/images/rainbow_roulette.png)
 
 #### BY: Alex O'Neill
 

@@ -97,10 +97,10 @@ let lastSecondsLeft = null;
 // ================================================================
 
 function preload() {
-  roundStartSound = loadSound("round_start_chime.wav");
-  countdownTickSound = loadSound("countdown_tick.wav");
-  roundEndSound = loadSound("round_end.wav");
-  backgroundMusic = loadSound("rr_bg_music_loop.wav");
+  roundStartSound = loadSound("music/round_start_chime.wav");
+  countdownTickSound = loadSound("music/countdown_tick.wav");
+  roundEndSound = loadSound("music/round_end.wav");
+  backgroundMusic = loadSound("music/rr_bg_music_loop.wav");
 }
 
 // ================================================================
