@@ -3,7 +3,8 @@
 // ================================================================
 // Alex O'Neill, 2025
 //
-// KEY CHANGE (ALPHA):
+//  CHANGES FROM ECHO SERVER BETA:
+//  -----------------------------------------------
 //  • Server is authoritative for:
 //      - host election
 //      - lobby list + slots
@@ -14,6 +15,7 @@
 //  • Client is authoritative ONLY for:
 //      - local input + rendering
 //      - sending movement updates + requesting actions
+//   -----------------------------------------------
 //
 // New/required server events used:
 //  • join(name)
