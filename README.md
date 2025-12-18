@@ -7,7 +7,7 @@
 _____________________________________________________________________
 
 
-- Game requires with at least 2 players, but no more than 10. 
+- Game requires at least 6 players to start, but no more than 10 players will be permitted per game (game rooms eventually). 
 
 - Players will choose between 6 colored zones over an unlimited number of 20-second rounds.  
 
